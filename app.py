@@ -53,6 +53,6 @@ with st.form("simulate_leave_form"):
             status_color = "green" if data["is_safe"] else "red"
             st.markdown(f"**{sub}**: Projected <span style='color:{status_color}'>{data['projected_percent']:.2f}%</span>", unsafe_allow_html=True)
             if not data["is_safe"]:
-                st.warning(f"CRITICAL RISK: Drops below 75% mandate!")
+                st.warning(f"CRITICAL RISK: You must attend {data['recovery_classes_needed']} consecutive classes to recover.")
         
         st.session_state.analyzer.planned_leaves = []
