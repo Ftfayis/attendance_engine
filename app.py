@@ -1,4 +1,4 @@
-# app.py
+
 import streamlit as st
 from models import Subject, LeaveEvent, RiskAnalyzer
 from pdf_generator import generate_duty_leave_pdf
@@ -32,9 +32,10 @@ else:
     st.info("No subjects added yet.")
 
 st.header("3. Simulate Future Leave")
+
 with st.form("simulate_leave_form"):
-    event_name = st.text_input("Event Name (e.g., hackthon,Ideathon)")
-    student_name = st.text_input("Student Name (e.g., Thangan")
+    event_name = st.text_input("Event Name (e.g., IGNITE 2.0 Ideathon)")
+    student_name = st.text_input("Student Name (e.g., Fayis Ammacheettu Valappil)")
     
     st.write("Specify missed classes per subject:")
     missed_counts = {}
@@ -43,34 +44,36 @@ with st.form("simulate_leave_form"):
         
     submit_leave = st.form_submit_button("Run Risk Simulation")
 
-    if submit_leave and event_name:
-        actual_missed = {k: v for k, v in missed_counts.items() if v > 0}
-        new_leave = LeaveEvent(event_name, actual_missed)
-        st.session_state.analyzer.add_leave_event(new_leave)
+
+
+if submit_leave and event_name:
+    actual_missed = {k: v for k, v in missed_counts.items() if v > 0}
+    new_leave = LeaveEvent(event_name, actual_missed)
+    st.session_state.analyzer.add_leave_event(new_leave)
+    
+    st.subheader("Simulation Results")
+    results = st.session_state.analyzer.simulate_future_attendance()
+    
+    for sub, data in results.items():
+        status_color = "green" if data["is_safe"] else "red"
+        st.markdown(f"**{sub}**: Projected <span style='color:{status_color}'>{data['projected_percent']:.2f}%</span>", unsafe_allow_html=True)
+        if not data["is_safe"]:
+            st.warning(f"CRITICAL RISK: You must attend {data['recovery_classes_needed']} consecutive classes to recover.")
+    
+
+    if student_name and event_name:
+        pdf_filename = generate_duty_leave_pdf(student_name, event_name, actual_missed, results)
         
-        st.subheader("Simulation Results")
-        results = st.session_state.analyzer.simulate_future_attendance()
-        
-        for sub, data in results.items():
-            status_color = "green" if data["is_safe"] else "red"
-            st.markdown(f"**{sub}**: Projected <span style='color:{status_color}'>{data['projected_percent']:.2f}%</span>", unsafe_allow_html=True)
-            if not data["is_safe"]:
-                st.warning(f"CRITICAL RISK: You must attend {data['recovery_classes_needed']} consecutive classes to recover.")
-        
-        
-        if student_name and event_name:
-            pdf_filename = generate_duty_leave_pdf(student_name, event_name, actual_missed, results)
+        with open(pdf_filename, "rb") as pdf_file:
+            pdf_bytes = pdf_file.read()
             
-            with open(pdf_filename, "rb") as pdf_file:
-                pdf_bytes = pdf_file.read()
-                
-            st.download_button(
-                label="📥 Download Official Duty Leave PDF",
-                data=pdf_bytes,
-                file_name=pdf_filename,
-                mime="application/pdf"
-            )
-        else:
-            st.info("Enter your Student Name and Event Name to unlock the PDF download.")
-            
-        st.session_state.analyzer.planned_leaves = []
+        st.download_button(
+            label="📥 Download Official Duty Leave PDF",
+            data=pdf_bytes,
+            file_name=pdf_filename,
+            mime="application/pdf"
+        )
+    else:
+        st.info("Enter your Student Name and Event Name to unlock the PDF download.")
+        
+    st.session_state.analyzer.planned_leaves = []
