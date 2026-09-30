@@ -1,6 +1,7 @@
 # app.py
 import streamlit as st
 from models import Subject, LeaveEvent, RiskAnalyzer
+from pdf_generator import generate_duty_leave_pdf
 
 if "analyzer" not in st.session_state:
     st.session_state.analyzer = RiskAnalyzer()
@@ -32,7 +33,8 @@ else:
 
 st.header("3. Simulate Future Leave")
 with st.form("simulate_leave_form"):
-    event_name = st.text_input("Event Name (e.g., IGNITE 2.0 Ideathon)")
+    event_name = st.text_input("Event Name (e.g., hackthon,Ideathon)")
+    student_name = st.text_input("Student Name (e.g., Thangan")
     
     st.write("Specify missed classes per subject:")
     missed_counts = {}
@@ -55,4 +57,20 @@ with st.form("simulate_leave_form"):
             if not data["is_safe"]:
                 st.warning(f"CRITICAL RISK: You must attend {data['recovery_classes_needed']} consecutive classes to recover.")
         
+        
+        if student_name and event_name:
+            pdf_filename = generate_duty_leave_pdf(student_name, event_name, actual_missed, results)
+            
+            with open(pdf_filename, "rb") as pdf_file:
+                pdf_bytes = pdf_file.read()
+                
+            st.download_button(
+                label="📥 Download Official Duty Leave PDF",
+                data=pdf_bytes,
+                file_name=pdf_filename,
+                mime="application/pdf"
+            )
+        else:
+            st.info("Enter your Student Name and Event Name to unlock the PDF download.")
+            
         st.session_state.analyzer.planned_leaves = []
