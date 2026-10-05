@@ -1,19 +1,92 @@
 
 import streamlit as st
+import os
 from models import Subject, LeaveEvent, RiskAnalyzer
 from pdf_generator import generate_duty_leave_pdf
+from ai_parser import extract_timetable_data
 
 if "analyzer" not in st.session_state:
     st.session_state.analyzer = RiskAnalyzer()
+if "extracted_data" not in st.session_state:
+    st.session_state.extracted_data = {}
 
 st.title("Attendance Risk & Forecasting Engine")
+st.header("🤖 AI Timetable Auto-Import")
+with st.expander("Upload & Manage Timetable"):
+    st.info("Securely extract subjects and hours directly from an image. Your API key is not saved.")
+    api_key_input = st.text_input("Gemini API Key", type="password")
+    uploaded_image = st.file_uploader("Upload Image", type=["png", "jpg", "jpeg"])
+    
+    if st.button("Extract Data"):
+        if uploaded_image and api_key_input:
+            with st.spinner("AI is analyzing your timetable..."):
+                temp_path = "temp_image.jpg"
+                with open(temp_path, "wb") as f:
+                    f.write(uploaded_image.getbuffer())
+                
+                data = extract_timetable_data(temp_path, api_key_input)
+                
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                
+                if "Error" in data:
+                    st.error(data["Error"])
+                else:
+        
+                    st.session_state.extracted_data = data
+                    st.success("Extraction complete! Choose your subjects below.")
+        else:
+            st.warning("Please enter your API key and upload an image.")
 
-st.header("1. Add Subject Data")
+    if st.session_state.extracted_data:
+        st.write("---")
+        st.subheader("Filter Your Subjects")
+        available_subjects = list(st.session_state.extracted_data.keys())
+        
+        selected_subjects = st.multiselect(
+            "Select which subjects you want to track on your dashboard right now:",
+            options=available_subjects,
+            default=available_subjects
+        )
+        
+        if st.button("Apply Selection"):
+            st.session_state.analyzer.subjects = {}
+            
+    
+            for sub_name in selected_subjects:
+                weekly_hours = st.session_state.extracted_data[sub_name]
+                new_sub = Subject(sub_name, weekly_hours, weekly_hours)
+                st.session_state.analyzer.add_subject(new_sub)
+            
+            st.success("Dashboard updated!")
+            st.rerun()
+st.header("1. Add / Update Subject Data")
+
+has_extracted = "extracted_data" in st.session_state and st.session_state.extracted_data
+
 with st.form("add_subject_form"):
-    sub_name = st.text_input("Subject Name (e.g., Microcontrollers)")
-    total_held = st.number_input("Total Classes Held", min_value=0, step=1)
-    attended = st.number_input("Classes Attended", min_value=0, step=1)
-    submit_subject = st.form_submit_button("Add Subject")
+    if has_extracted:
+        
+        options = list(st.session_state.extracted_data.keys()) + ["+ Type Custom Subject"]
+        selected_option = st.selectbox("Choose Subject to Update", options)
+        
+        if selected_option == "+ Type Custom Subject":
+            sub_name = st.text_input("Custom Subject Name")
+        else:
+            sub_name = selected_option
+    else:
+        sub_name = st.text_input("Subject Name")
+        
+    total_held = st.number_input("Total class Hours Held", min_value=0, step=1)
+    attended = st.number_input("Classes hours Attended", min_value=0, step=1)
+    submit_subject = st.form_submit_button("Calculate & Add")
+
+    if submit_subject and sub_name:
+        if sub_name != "+ Type Custom Subject":
+            new_sub = Subject(sub_name, total_held, attended)
+            st.session_state.analyzer.add_subject(new_sub)
+            st.success(f"Updated attendance for {sub_name}!")
+            st.rerun() 
 
     if submit_subject and sub_name:
         new_sub = Subject(sub_name, total_held, attended)
@@ -26,7 +99,7 @@ if st.session_state.analyzer.subjects:
         st.metric(
             label=name, 
             value=f"{sub.get_current_percentage():.2f}%", 
-            delta=f"{sub.get_remaining_safe_cuts()} safe cuts left"
+            delta=f"{sub.get_remaining_safe_cuts()} safe Hours left"
         )
 else:
     st.info("No subjects added yet.")
@@ -34,13 +107,13 @@ else:
 st.header("3. Simulate Future Leave")
 
 with st.form("simulate_leave_form"):
-    event_name = st.text_input("Event Name (e.g., IGNITE 2.0 Ideathon)")
-    student_name = st.text_input("Student Name (e.g., Fayis Ammacheettu Valappil)")
+    event_name = st.text_input("Event Name ")
+    student_name = st.text_input("Student Name ")
     
-    st.write("Specify missed classes per subject:")
+    st.write("Specify class hours will miss in this subject:")
     missed_counts = {}
     for sub_name in st.session_state.analyzer.subjects.keys():
-        missed_counts[sub_name] = st.number_input(f"Missed {sub_name} classes", min_value=0, step=1)
+        missed_counts[sub_name] = st.number_input(f" {sub_name} class hours", min_value=0, step=1)
         
     submit_leave = st.form_submit_button("Run Risk Simulation")
 

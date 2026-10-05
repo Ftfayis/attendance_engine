@@ -17,7 +17,7 @@ def generate_duty_leave_pdf(student_name: str, event_name: str, actual_missed: d
     pdf.cell(200, 10, txt=f"Date: {date_today}", ln=True)
     pdf.ln(5)
     
-    pdf.multi_cell(0, 10, txt=f"This is to formally request duty leave for {student_name} to participate in the {event_name}. Below is the breakdown of affected classes and the mathematically forecasted attendance upon return.")
+    pdf.multi_cell(0, 10, txt=f"Respected Authority,\n\nI kindly request you to grant duty leave for {student_name} to participate in {event_name}. A detailed statement of the classes that will be missed, along with the mathematically projected attendance percentage, is provided below for your reference.")
     pdf.ln(5)
     
     # Missed Classes Section
