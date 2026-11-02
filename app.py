@@ -35,64 +35,14 @@ st.title("OptiLeave Dashboard")
 st.markdown("Automated Academic Compliance & Risk Engine")
 st.write("---")
 
-# --- CREATE TABS ---
-tab1, tab2, tab3 = st.tabs(["📊 Live Dashboard", "🤖 AI Auto-Import", "📄 Duty Leave Export"])
+# --- CREATE TABS (REORDERED) ---
+tab1, tab2, tab3 = st.tabs(["🤖 AI Auto-Import", "📊 Live Dashboard", "📄 Duty Leave Export"])
 
 
 # ==========================================
-# TAB 1: DASHBOARD & MANUAL OVERRIDES
+# TAB 1: AI AUTO-IMPORT (Now First)
 # ==========================================
 with tab1:
-    st.subheader("Current Academic Standing")
-    
-    if st.session_state.analyzer.subjects:
-        # Create a dynamic 3-column grid for metrics
-        cols = st.columns(3)
-        col_index = 0
-        
-        for name, sub in st.session_state.analyzer.subjects.items():
-            with cols[col_index % 3]:
-                st.metric(
-                    label=name, 
-                    value=f"{sub.get_current_percentage():.2f}%", 
-                    delta=f"{sub.get_remaining_safe_cuts()} safe Hours left"
-                )
-            col_index += 1
-    else:
-        st.info("No subjects added yet. Go to the AI Auto-Import tab or add them below.")
-
-    st.write("---")
-    st.subheader("Update Subject Data")
-    
-    has_extracted = "extracted_data" in st.session_state and st.session_state.extracted_data
-
-    with st.form("add_subject_form"):
-        if has_extracted:
-            options = list(st.session_state.extracted_data.keys()) + ["+ Type Custom Subject"]
-            selected_option = st.selectbox("Choose Subject to Update", options)
-            
-            if selected_option == "+ Type Custom Subject":
-                sub_name = st.text_input("Custom Subject Name")
-            else:
-                sub_name = selected_option
-        else:
-            sub_name = st.text_input("Subject Name")
-            
-        total_held = st.number_input("Total class Hours Held", min_value=0, step=1)
-        attended = st.number_input("Classes hours Attended", min_value=0, step=1)
-        submit_subject = st.form_submit_button("Calculate & Add")
-
-        if submit_subject and sub_name:
-            new_sub = Subject(sub_name, total_held, attended)
-            st.session_state.analyzer.add_subject(new_sub)
-            st.success(f"Updated attendance for {sub_name}!")
-            st.rerun() 
-
-
-# ==========================================
-# TAB 2: AI AUTO-IMPORT
-# ==========================================
-with tab2:
     st.info("Securely extract subjects and hours directly from an image. Your API key is not saved.")
     api_key_input = st.text_input("Gemini API Key", type="password")
     uploaded_image = st.file_uploader("Upload Image", type=["png", "jpg", "jpeg"])
@@ -138,6 +88,56 @@ with tab2:
             
             st.success("Dashboard updated!")
             st.rerun()
+
+
+# ==========================================
+# TAB 2: DASHBOARD & MANUAL OVERRIDES (Now Second)
+# ==========================================
+with tab2:
+    st.subheader("Current Academic Standing")
+    
+    if st.session_state.analyzer.subjects:
+        # Create a dynamic 3-column grid for metrics
+        cols = st.columns(3)
+        col_index = 0
+        
+        for name, sub in st.session_state.analyzer.subjects.items():
+            with cols[col_index % 3]:
+                st.metric(
+                    label=name, 
+                    value=f"{sub.get_current_percentage():.2f}%", 
+                    delta=f"{sub.get_remaining_safe_cuts()} safe Hours left"
+                )
+            col_index += 1
+    else:
+        st.info("No subjects added yet. Go to the AI Auto-Import tab or add them below.")
+
+    st.write("---")
+    st.subheader("Update Subject Data")
+    
+    has_extracted = "extracted_data" in st.session_state and st.session_state.extracted_data
+
+    with st.form("add_subject_form"):
+        if has_extracted:
+            options = list(st.session_state.extracted_data.keys()) + ["+ Type Custom Subject"]
+            selected_option = st.selectbox("Choose Subject to Update", options)
+            
+            if selected_option == "+ Type Custom Subject":
+                sub_name = st.text_input("Custom Subject Name")
+            else:
+                sub_name = selected_option
+        else:
+            sub_name = st.text_input("Subject Name")
+            
+        total_held = st.number_input("Total class Hours Held", min_value=0, step=1)
+        attended = st.number_input("Classes hours Attended", min_value=0, step=1)
+        submit_subject = st.form_submit_button("Calculate & Add")
+
+        if submit_subject and sub_name:
+            new_sub = Subject(sub_name, total_held, attended)
+            st.session_state.analyzer.add_subject(new_sub)
+            st.success(f"Updated attendance for {sub_name}!")
+            st.rerun() 
 
 
 # ==========================================
