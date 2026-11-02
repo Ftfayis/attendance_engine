@@ -8,7 +8,8 @@ def generate_duty_leave_pdf(student_name: str, event_name: str, actual_missed: d
     
     # Header
     pdf.set_font("Arial", 'B', 14)
-    pdf.cell(200, 10, txt="DUTY LEAVE APPLICATION", ln=True, align='C')
+    # Look for a line similar to this and update the 'txt' parameter:
+    pdf.cell(0, 10, txt="OptiLeave - Formal Duty Leave Application", ln=True, align='C')
     pdf.ln(10)
     
     # Body
