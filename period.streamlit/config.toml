@@ -1,9 +1,0 @@
-[theme]
-primaryColor = "#6366F1" # Premium Indigo accent for buttons and highlights
-backgroundColor = "#0F172A" # Deep slate background
-secondaryBackgroundColor = "#1E293B" # Slightly lighter slate for input boxes and sidebars
-textColor = "#F8FAFC" # Crisp, readable white text
-font = "sans serif"
-
-[client]
-showErrorDetails = false # Hides ugly Python tracebacks from end-users
